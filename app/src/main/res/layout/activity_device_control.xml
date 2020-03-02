@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".DeviceControlActivity">
+
+    <TextView
+        android:id="@+id/deviceName_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="32dp"
+        android:text="DeviceName"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/deviceStatus_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:text="STATUS"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/deviceAddress_text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.45"
+        app:layout_constraintStart_toEndOf="@+id/deviceName_text"
+        app:layout_constraintTop_toTopOf="@+id/deviceName_text"
+        app:layout_constraintVertical_bias="0.625" />
+
+    <TextView
+        android:id="@+id/deviceAddress_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="DeviceAddress"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/deviceName_text"
+        app:layout_constraintStart_toStartOf="@+id/deviceName_text"
+        app:layout_constraintTop_toBottomOf="@+id/deviceName_text" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="300dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="8dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/deviceAddress_text">
+
+        <TextView
+            android:id="@+id/dataField_TV"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/realtimeLineChart"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+
+        </com.github.mikephil.charting.charts.LineChart>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/requestdata_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginBottom="32dp"
+        android:text="REQUEST DATA"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/sendData"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="32dp"
+        android:text="SEND DATA"
+        app:layout_constraintBottom_toBottomOf="@+id/requestdata_btn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/requestdata_btn" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
