@@ -1,7 +1,6 @@
 package com.example.healthdevice;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
@@ -17,6 +16,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Legend;
@@ -40,14 +41,12 @@ public class DeviceControlActivity extends AppCompatActivity {
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRA_DEVICE_ADDRESS = "DEVICE_ADDRESS";
 
-    private TextView ConnectionState_TV;
-    private TextView mDataField;
+
 
     private String mDeviceAddress;
     private BluetoothGattCharacteristic mNotifyCharacteristic;
     private BluetoothGattCharacteristic mWriteCharacteristic;
     private BluetoothLeService mBluetoothLeService;
-    private List<BluetoothGattCharacteristic> gattCharacteristics;
 
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
@@ -67,42 +66,59 @@ public class DeviceControlActivity extends AppCompatActivity {
         }
     };
 
-    Long time;
+    Long time, timeOfLastPackage;
     Float value;
     Integer numberOfPackage;
+    long cycleTime;
+    private TextView mDataField, ConnectionState_TV, Duration_TV;
+    /*private void clearUI() {
+        mDataField.setText("0");
+    }*/
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
             if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
-                boolean mConnected = true;
+                //boolean mConnected = true;
                 updateConnectionState("CONNECTED");
                 invalidateOptionsMenu();
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 updateConnectionState("DISCONNECTED");
                 invalidateOptionsMenu();
-                clearUI();
+                //clearUI();
             } else if (BluetoothLeService.ACTION_GATT_SERVICE_DISCOVERED.equals(action)) {
                 updateConnectionState("GATT_SERVICE_DISCOVERED");
-                displayGattServices(mBluetoothLeService.getSupportedGattServices());
+                findCharacteristicProperties(mBluetoothLeService.getSupportedGattServices());
                 numberOfPackage = 0;
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
                 updateConnectionState("ACTION_DATA_AVAILABLE");
 
+                //dem so luong goi
                 numberOfPackage++;
+                if (timeOfLastPackage != null) {
+                    cycleTime = System.currentTimeMillis() - timeOfLastPackage;
+                }
+                timeOfLastPackage = System.currentTimeMillis();
 
+                //lay du lieu nhan tu BluetoothLeService
                 byte[] bytes = intent.getByteArrayExtra(BluetoothLeService.EXTRA_DATA);
+
+                //xu ly du lieu
                 if (bytes != null && bytes.length > 0) {
-
-
                     byte[] FirstValue = new byte[8];
                     byte[] SecondValue = new byte[8];
 
+                    //Lay 4 byte dau va 4 byte cuoi
                     System.arraycopy(bytes,0,FirstValue,0,4);
                     System.arraycopy(bytes,4,SecondValue,0,4);
+
+                    //chuyen doi dang byte sang so
                     value = ByteBuffer.wrap(FirstValue).order(ByteOrder.LITTLE_ENDIAN).getFloat();
                     time = ByteBuffer.wrap(SecondValue).order(ByteOrder.LITTLE_ENDIAN).getLong();
+
+                    //cap nhat du lieu do thi
                     addEntry();
+
                     setNumberOfPackage();
                 }
             }
@@ -117,12 +133,8 @@ public class DeviceControlActivity extends AppCompatActivity {
             }
         });
     }
-
-    private void clearUI() {
-        mDataField.setText("0");
-    }
-
     private LineChart realtimeChart;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -136,6 +148,7 @@ public class DeviceControlActivity extends AppCompatActivity {
         TextView deviceName_TV = findViewById(R.id.deviceName_text);
         TextView deviceAddress_TV = findViewById(R.id.deviceAddress_text);
         mDataField = findViewById(R.id.dataField_TV);
+        Duration_TV = findViewById(R.id.duration);
 
         deviceAddress_TV.setText(mDeviceAddress);
         deviceName_TV.setText(mDeviceName);
@@ -144,11 +157,13 @@ public class DeviceControlActivity extends AppCompatActivity {
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
 
+
+        //Bat thong bao thay doi tu BLE
         final Button requestData = findViewById(R.id.requestdata_btn);
         requestData.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                enableNotifycation();
+                enableNotification();
             }
         });
 
@@ -247,8 +262,10 @@ public class DeviceControlActivity extends AppCompatActivity {
         yAxisRight.setEnabled(false);
     }
 
+    @SuppressLint("SetTextI18n")
     private void setNumberOfPackage() {
-            mDataField.setText(String.valueOf(numberOfPackage));
+        mDataField.setText("Số lượng gói: " + numberOfPackage);
+        Duration_TV.setText("Thời gian: " + cycleTime + "ms");
     }
     private void addEntry(){
         LineData lineData = realtimeChart.getData();
@@ -294,36 +311,32 @@ public class DeviceControlActivity extends AppCompatActivity {
         return intentFilter;
     }
 
-    private void displayGattServices(List<BluetoothGattService> gattServices) {
+    private void findCharacteristicProperties(List<BluetoothGattService> gattServices) {
         if (gattServices == null) return;
         for (BluetoothGattService bluetoothGattService : gattServices) {
-            gattCharacteristics = bluetoothGattService.getCharacteristics();
-            findCharacteristicProperties();
-        }
-    }
-
-    private void findCharacteristicProperties() {
-        if (gattCharacteristics == null){
-            return;
-        }
-        for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-            Log.d("Characterristic UUID", gattCharacteristic.getUuid().toString());
-            if ((gattCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0) {
-                if(gattCharacteristic.getUuid().toString().equalsIgnoreCase(HEART_RATE_MEASUREMENT_RX)){
-                    mWriteCharacteristic = gattCharacteristic;
-                    Log.d("Characterristic UUID", "PROPERTY_WRITE_NR");
-                }
+            List<BluetoothGattCharacteristic> gattCharacteristics = bluetoothGattService.getCharacteristics();
+            if (gattCharacteristics == null) {
+                return;
             }
-            if ((gattCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-                if(gattCharacteristic.getUuid().toString().equalsIgnoreCase(HEART_RATE_MEASUREMENT_TX)){
-                    mNotifyCharacteristic = gattCharacteristic;
-                    Log.d("Characterristic UUID", "PROPERTY_NOTIFY");
+            for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
+                Log.d("Characterristic UUID", gattCharacteristic.getUuid().toString());
+                if ((gattCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0) {
+                    if (gattCharacteristic.getUuid().toString().equalsIgnoreCase(HEART_RATE_MEASUREMENT_RX)) {
+                        mWriteCharacteristic = gattCharacteristic;
+                        Log.d("Characterristic UUID", "PROPERTY_WRITE_NR");
+                    }
+                }
+                if ((gattCharacteristic.getProperties() | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                    if (gattCharacteristic.getUuid().toString().equalsIgnoreCase(HEART_RATE_MEASUREMENT_TX)) {
+                        mNotifyCharacteristic = gattCharacteristic;
+                        Log.d("Characterristic UUID", "PROPERTY_NOTIFY");
+                    }
                 }
             }
         }
     }
 
-    private void enableNotifycation() {
+    private void enableNotification() {
         if(mNotifyCharacteristic != null) {
             String UUID = mNotifyCharacteristic.getUuid().toString();
             if (UUID.equalsIgnoreCase(HEART_RATE_MEASUREMENT_TX)) {
